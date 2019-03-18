@@ -229,7 +229,7 @@ resource "aws_key_pair" "k8s" {
 
 # Generate the CA configuration file, certificate, and private key
 resource "null_resource" "tls_ca" {
-  provisoner "local-exec" {
+  provisioner "local-exec" {
     command = "cfssl gencert -initca tls/ca-csr.json | cfssljson -bare tls/ca"
   }
 }
@@ -240,7 +240,7 @@ resource "null_resource" "tls_admin" {
     tls_ca = "${null_resource.tls_ca.id}"
   }
 
-  provisioner "local_exec" {
+  provisioner "local-exec" {
     command = <<EOF
 cfssl gencert \
   -ca=tls/ca.pem -ca-key=tls/ca-key.pem \
