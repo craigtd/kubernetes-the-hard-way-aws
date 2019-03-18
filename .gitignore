@@ -12,3 +12,6 @@
 /.idea
 /*.iml
 
+/ssh
+*.csr
+*.pem

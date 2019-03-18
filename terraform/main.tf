@@ -227,3 +227,28 @@ resource "aws_key_pair" "k8s" {
   public_key  = "${tls_private_key.k8s.public_key_openssh}"
 }
 
+# Generate the CA configuration file, certificate, and private key
+resource "null_resource" "tls_ca" {
+  provisoner "local-exec" {
+    command = "cfssl gencert -initca tls/ca-csr.json | cfssljson -bare tls/ca"
+  }
+}
+
+#Generate the admin client certificate and private key
+resource "null_resource" "tls_admin" {
+  triggers = {
+    tls_ca = "${null_resource.tls_ca.id}"
+  }
+
+  provisioner "local_exec" {
+    command = <<EOF
+cfssl gencert \
+  -ca=tls/ca.pem -ca-key=tls/ca-key.pem \
+  -config=tls/ca-config.json \
+  -profile=kubernetes \
+  tls/admin-csr.json \
+  | cfssljson -bare tls/admin
+EOF
+  }
+}
+
