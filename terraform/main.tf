@@ -45,6 +45,7 @@ resource "aws_subnet" "k8s" {
   }
 }
 
+
 # Internet Gateway
 resource "aws_internet_gateway" "k8s" {
   vpc_id = "${aws_vpc.k8s-vpc.id}"
@@ -53,6 +54,7 @@ resource "aws_internet_gateway" "k8s" {
     Name = "kubernetes"
   }
 }
+
 
 # Route table
 resource "aws_route_table" "k8s" {
@@ -72,6 +74,7 @@ resource "aws_route_table_association" "k8s" {
   subnet_id       = "${aws_subnet.k8s.id}"
   route_table_id  = "${aws_route_table.k8s.id}"
 }
+
 
 # Security Groups
 resource "aws_security_group" "k8s" {
@@ -186,6 +189,7 @@ resource "aws_instance" "k8s-controller" {
   user_data                   = "name=controller-${count.index}"
   subnet_id                   = "${aws_subnet.k8s.id}"
   source_dest_check           = false
+  key_name                    = "${aws_key_pair.k8s.key_name}"
 
   tags = {
     Name = "controller-${count.index}"
@@ -203,8 +207,23 @@ resource "aws_instance" "k8s-worker" {
   user_data                   = "name=worker-${count.index}|pod-cidr=${var.worker_pod_cidrs[count.index]}"
   subnet_id                   = "${aws_subnet.k8s.id}"
   source_dest_check           = false
+  key_name                    = "${aws_key_pair.k8s.key_name}"
 
   tags = {
     Name = "worker-${count.index}"
   }
 }
+
+
+# SSH Access
+# method below should be used only for bootstrapping - should be replaced with a proper key
+resource "tls_private_key" "k8s" {
+  algorithm   = "RSA"
+  rsa_bits    = 2048
+}
+
+resource "aws_key_pair" "k8s" {
+  key_name    = "kubernetes"
+  public_key  = "${tls_private_key.k8s.public_key_openssh}"
+}
+
